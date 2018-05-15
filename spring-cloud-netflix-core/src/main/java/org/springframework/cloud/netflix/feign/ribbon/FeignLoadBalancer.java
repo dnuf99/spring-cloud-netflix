@@ -16,32 +16,24 @@
 
 package org.springframework.cloud.netflix.feign.ribbon;
 
-import feign.Client;
-import feign.Request;
-import feign.Response;
-
-import java.io.IOException;
-import java.net.URI;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import org.springframework.cloud.netflix.ribbon.ServerIntrospector;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpRequest;
-import com.netflix.client.AbstractLoadBalancerAwareClient;
-import com.netflix.client.ClientException;
-import com.netflix.client.ClientRequest;
-import com.netflix.client.IResponse;
-import com.netflix.client.RequestSpecificRetryHandler;
-import com.netflix.client.RetryHandler;
+import com.netflix.client.*;
 import com.netflix.client.config.CommonClientConfigKey;
 import com.netflix.client.config.IClientConfig;
 import com.netflix.loadbalancer.ILoadBalancer;
 import com.netflix.loadbalancer.Server;
+import com.netflix.loadbalancer.reactive.LoadBalancerCommand;
+import feign.Client;
+import feign.Request;
+import feign.Response;
+import org.springframework.cloud.netflix.ribbon.ServerIntrospector;
+import org.springframework.cloud.netflix.ribbon.canary.CanaryConst;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpRequest;
+
+import java.io.IOException;
+import java.net.URI;
+import java.util.*;
 
 import static org.springframework.cloud.netflix.ribbon.RibbonUtils.updateToHttpsIfNeeded;
 
@@ -105,6 +97,13 @@ public class FeignLoadBalancer extends
 		return super.reconstructURIWithServer(server, uri);
 	}
 
+	@Override
+	protected void customizeLoadBalancerCommandBuilder(RibbonRequest request, IClientConfig config, LoadBalancerCommand.Builder<RibbonResponse> builder) {
+		if (request.getLoadBalancerKey() != null) {
+			builder.withServerLocator(request.getLoadBalancerKey());
+		}
+	}
+
 	static class RibbonRequest extends ClientRequest implements Cloneable {
 
 		private final Request request;
@@ -114,6 +113,13 @@ public class FeignLoadBalancer extends
 			this.client = client;
 			setUri(uri);
 			this.request = toRequest(request);
+			if(request.headers().containsKey(CanaryConst.REQUEST_HEADER_X_CANARY)){
+			    Collection<String> values = request.headers().get(CanaryConst.REQUEST_HEADER_X_CANARY);
+                String value = values.iterator().next();
+                if(Boolean.valueOf(value)){
+                    this.loadBalancerKey = "true";
+                }
+            }
 		}
 
 		private Request toRequest(Request request) {

@@ -25,9 +25,11 @@ import org.apache.http.client.params.CookiePolicy;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.cloud.commons.httpclient.HttpClientConfiguration;
 import org.springframework.cloud.netflix.ribbon.apache.HttpClientRibbonConfiguration;
+import org.springframework.cloud.netflix.ribbon.canary.CanaryRule;
 import org.springframework.cloud.netflix.ribbon.okhttp.OkHttpRibbonConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -93,11 +95,24 @@ public class RibbonClientConfiguration {
 
 	@Bean
 	@ConditionalOnMissingBean
-	public IRule ribbonRule(IClientConfig config) {
+	@ConditionalOnProperty(value = "server.canary.enabled", havingValue = "false")
+	public IRule zoneAvoidanceRule(IClientConfig config) {
 		if (this.propertiesFactory.isSet(IRule.class, name)) {
 			return this.propertiesFactory.get(IRule.class, config, name);
 		}
 		ZoneAvoidanceRule rule = new ZoneAvoidanceRule();
+		rule.initWithNiwsConfig(config);
+		return rule;
+	}
+
+	@Bean
+	@ConditionalOnMissingBean
+	@ConditionalOnProperty(value = "server.canary.enabled", havingValue = "true", matchIfMissing = true)
+	public IRule canaryRule(IClientConfig config) {
+		if (this.propertiesFactory.isSet(IRule.class, name)) {
+			return this.propertiesFactory.get(IRule.class, config, name);
+		}
+		CanaryRule rule = new CanaryRule();
 		rule.initWithNiwsConfig(config);
 		return rule;
 	}
