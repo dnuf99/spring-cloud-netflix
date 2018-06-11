@@ -8,15 +8,32 @@ public class CanaryServerPredicate extends AbstractServerPredicate {
 
     @Override
     public boolean apply(PredicateKey input) {
-        if(input.getLoadBalancerKey() == null || !Boolean.valueOf(input.getLoadBalancerKey().toString())){
+        //always true
+        if (input.getLoadBalancerKey() == null) {
             return true;
         }
+        Boolean loadBalancerKey = Boolean.valueOf(input.getLoadBalancerKey().toString());
         Server server = input.getServer();
         String serverGroup = server.getMetaInfo().getServerGroup();
-        if(serverGroup != null && serverGroup.equalsIgnoreCase(CanaryConst.INSTANCE_SERVER_GROUP_CANARY)){
-            return true;
-        }else{
-            return false;
+
+        if (CanaryConst.INSTANCE_SERVER_GROUP_CANARY.equalsIgnoreCase(serverGroup)) {
+            //eureka.instance.a-s-g-name=canary
+            if (loadBalancerKey) {
+                //choose canary server
+                return true;
+            } else {
+                //not choose canary server
+                return false;
+            }
+        } else {
+            //server group is null or not canary
+            if (loadBalancerKey) {
+                //not choose canary server
+                return false;
+            } else {
+                //choose server
+                return true;
+            }
         }
     }
 

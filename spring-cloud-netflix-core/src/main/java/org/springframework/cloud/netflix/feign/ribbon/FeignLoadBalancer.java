@@ -118,7 +118,9 @@ public class FeignLoadBalancer extends
                 String value = values.iterator().next();
                 if(Boolean.valueOf(value)){
                     this.loadBalancerKey = "true";
-                }
+                }else{
+                	this.loadBalancerKey = "false";
+				}
             }
 		}
 

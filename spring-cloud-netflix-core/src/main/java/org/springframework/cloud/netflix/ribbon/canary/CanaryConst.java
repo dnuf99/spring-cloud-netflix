@@ -9,8 +9,7 @@ public class CanaryConst {
     public static final String REQUEST_HEADER_X_CANARY = "X-Canary";
 
     /**
-     * eureka instance metadata info
-     * eureka.instance.metadata-map.canary=true
+     * eureka.instance.a-s-g-name=canary
      */
     public static final String INSTANCE_SERVER_GROUP_CANARY = "canary";
 }

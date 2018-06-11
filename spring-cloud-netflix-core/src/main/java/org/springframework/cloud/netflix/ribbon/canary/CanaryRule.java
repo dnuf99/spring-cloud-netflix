@@ -15,9 +15,9 @@ public class CanaryRule extends ZoneAvoidanceRule {
 
     @Override
     public void initWithNiwsConfig(IClientConfig clientConfig) {
+        CanaryServerPredicate canaryServerPredicate = new CanaryServerPredicate();
         ZoneAvoidancePredicate zonePredicate = new ZoneAvoidancePredicate(this, clientConfig);
         AvailabilityPredicate availabilityPredicate = new AvailabilityPredicate(this, clientConfig);
-        CanaryServerPredicate canaryServerPredicate = new CanaryServerPredicate();
         compositePredicate = createCompositePredicate(zonePredicate, availabilityPredicate, canaryServerPredicate);
     }
 
