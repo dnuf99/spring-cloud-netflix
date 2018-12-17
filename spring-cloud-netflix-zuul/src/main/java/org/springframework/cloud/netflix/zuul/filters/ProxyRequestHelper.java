@@ -27,6 +27,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.regex.Pattern;
 import java.util.Set;
 
 import javax.servlet.http.HttpServletRequest;
@@ -63,6 +64,10 @@ public class ProxyRequestHelper {
 	 */
 	public static final String IGNORED_HEADERS = "ignoredHeaders";
 
+	public static final Pattern FORM_FEED_PATTERN = Pattern.compile("\f");
+
+	public static final Pattern COLON_PATTERN = Pattern.compile(":");
+
 	private Set<String> ignoredHeaders = new LinkedHashSet<>();
 
 	private Set<String> sensitiveHeaders = new LinkedHashSet<>();
@@ -70,6 +75,21 @@ public class ProxyRequestHelper {
 	private Set<String> whitelistHosts = new LinkedHashSet<>();
 
 	private boolean traceRequestBody = true;
+
+	private boolean addHostHeader = false;
+
+	private boolean urlDecoded = true;
+
+	@Deprecated
+	//TODO Remove in 2.1.x
+	public ProxyRequestHelper() {}
+
+	public ProxyRequestHelper(ZuulProperties zuulProperties) {
+		this.ignoredHeaders.addAll(zuulProperties.getIgnoredHeaders());
+		this.traceRequestBody = zuulProperties.isTraceRequestBody();
+		this.addHostHeader = zuulProperties.isAddHostHeader();
+		this.urlDecoded = zuulProperties.isDecodeUrl();
+	}
 
 	public void setWhitelistHosts(Set<String> whitelistHosts) {
 		this.whitelistHosts.addAll(whitelistHosts);
@@ -79,10 +99,14 @@ public class ProxyRequestHelper {
 		this.sensitiveHeaders.addAll(sensitiveHeaders);
 	}
 
+	@Deprecated
+	//TODO Remove in 2.1.x
 	public void setIgnoredHeaders(Set<String> ignoredHeaders) {
 		this.ignoredHeaders.addAll(ignoredHeaders);
 	}
 
+	@Deprecated
+	//TODO Remove in 2.1.x
 	public void setTraceRequestBody(boolean traceRequestBody) {
 		this.traceRequestBody = traceRequestBody;
 	}
@@ -93,7 +117,10 @@ public class ProxyRequestHelper {
 		String contextURI = (String) context.get(REQUEST_URI_KEY);
 		if (contextURI != null) {
 			try {
-				uri = UriUtils.encodePath(contextURI, characterEncoding(request));
+				uri = contextURI;
+				if (this.urlDecoded) {
+					uri = UriUtils.encodePath(contextURI, characterEncoding(request));
+				}
 			}
 			catch (Exception e) {
 				log.debug(
@@ -143,9 +170,13 @@ public class ProxyRequestHelper {
 		}
 		Map<String, String> zuulRequestHeaders = context.getZuulRequestHeaders();
 		for (String header : zuulRequestHeaders.keySet()) {
-			headers.set(header, zuulRequestHeaders.get(header));
+			if (isIncludedHeader(header)){
+				headers.set(header, zuulRequestHeaders.get(header));
+			}
 		}
-		headers.set(HttpHeaders.ACCEPT_ENCODING, "gzip");
+		if(!headers.containsKey(HttpHeaders.ACCEPT_ENCODING)) {
+			headers.set(HttpHeaders.ACCEPT_ENCODING, "gzip");
+		}
 		return headers;
 	}
 
@@ -161,6 +192,8 @@ public class ProxyRequestHelper {
 		for (Entry<String, List<String>> header : headers.entrySet()) {
 			String name = header.getKey();
 			for (String value : header.getValue()) {
+				context.addOriginResponseHeader(name, value);
+
 				if (name.equalsIgnoreCase(HttpHeaders.CONTENT_ENCODING)
 						&& HTTPRequestUtils.getInstance().isGzipped(value)) {
 					isOriginResponseGzipped = true;
@@ -202,9 +235,11 @@ public class ProxyRequestHelper {
 		}
 		switch (name) {
 		case "host":
+			if(addHostHeader) {
+				return true;
+			}
 		case "connection":
 		case "content-length":
-		case "content-encoding":
 		case "server":
 		case "transfer-encoding":
 		case "x-application-context":
@@ -259,11 +294,11 @@ public class ProxyRequestHelper {
 					// if form feed is already part of param name double
 					// since form feed is used as the colon replacement below
 					if (key.contains("\f")) {
-						key = (key.replaceAll("\f", "\f\f"));
+						key = (FORM_FEED_PATTERN.matcher(key).replaceAll("\f\f"));
 					}
 					// colon is special to UriTemplate
 					if (key.contains(":")) {
-						key = key.replaceAll(":", "\f");
+						key = COLON_PATTERN.matcher(key).replaceAll("\f");
 					}
 					key = key + i;
 					singles.put(key, value);
