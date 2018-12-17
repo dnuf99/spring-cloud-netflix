@@ -145,7 +145,9 @@ public class ProxyRequestHelper {
 		for (String header : zuulRequestHeaders.keySet()) {
 			headers.set(header, zuulRequestHeaders.get(header));
 		}
-		headers.set(HttpHeaders.ACCEPT_ENCODING, "gzip");
+		if(!headers.containsKey(HttpHeaders.ACCEPT_ENCODING)) {
+			headers.set(HttpHeaders.ACCEPT_ENCODING, "gzip");
+		}
 		return headers;
 	}
 
@@ -161,6 +163,8 @@ public class ProxyRequestHelper {
 		for (Entry<String, List<String>> header : headers.entrySet()) {
 			String name = header.getKey();
 			for (String value : header.getValue()) {
+				context.addOriginResponseHeader(name, value);
+
 				if (name.equalsIgnoreCase(HttpHeaders.CONTENT_ENCODING)
 						&& HTTPRequestUtils.getInstance().isGzipped(value)) {
 					isOriginResponseGzipped = true;

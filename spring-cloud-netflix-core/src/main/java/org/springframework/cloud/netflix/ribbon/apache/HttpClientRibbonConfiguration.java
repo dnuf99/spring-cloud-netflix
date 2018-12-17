@@ -36,6 +36,7 @@ import org.springframework.cloud.client.loadbalancer.LoadBalancedRetryListenerFa
 import org.springframework.cloud.client.loadbalancer.LoadBalancedRetryPolicyFactory;
 import org.springframework.cloud.commons.httpclient.ApacheHttpClientConnectionManagerFactory;
 import org.springframework.cloud.commons.httpclient.ApacheHttpClientFactory;
+import org.springframework.cloud.netflix.ribbon.RibbonLoadBalancerContext;
 import org.springframework.cloud.netflix.ribbon.ServerIntrospector;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -89,6 +90,8 @@ public class HttpClientRibbonConfiguration {
 			TimeUnit ttlUnit = DefaultClientConfigImpl.DEFAULT_POOL_KEEP_ALIVE_TIME_UNITS;
 			if (timeToLiveObj instanceof Long) {
 				timeToLive = (Long) timeToLiveObj;
+			} else if (timeToLiveObj instanceof String) {
+				timeToLive = Long.valueOf((String)timeToLiveObj);
 			}
 			if (ttlUnitObj instanceof TimeUnit) {
 				ttlUnit = (TimeUnit) ttlUnitObj;
@@ -154,12 +157,14 @@ public class HttpClientRibbonConfiguration {
 		ILoadBalancer loadBalancer, RetryHandler retryHandler,
 		LoadBalancedRetryPolicyFactory loadBalancedRetryPolicyFactory, CloseableHttpClient httpClient,
 		LoadBalancedBackOffPolicyFactory loadBalancedBackOffPolicyFactory,
-		LoadBalancedRetryListenerFactory loadBalancedRetryListenerFactory) {
+		LoadBalancedRetryListenerFactory loadBalancedRetryListenerFactory,
+		RibbonLoadBalancerContext ribbonLoadBalancerContext) {
 		RetryableRibbonLoadBalancingHttpClient client = new RetryableRibbonLoadBalancingHttpClient(
 			httpClient, config, serverIntrospector, loadBalancedRetryPolicyFactory,
 			loadBalancedBackOffPolicyFactory, loadBalancedRetryListenerFactory);
 		client.setLoadBalancer(loadBalancer);
 		client.setRetryHandler(retryHandler);
+		client.setRibbonLoadBalancerContext(ribbonLoadBalancerContext);
 		Monitors.registerObject("Client_" + this.name, client);
 		return client;
 	}
