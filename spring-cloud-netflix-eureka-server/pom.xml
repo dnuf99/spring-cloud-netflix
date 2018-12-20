@@ -8,7 +8,9 @@
 		<version>1.4.5.RELEASE</version>
 		<relativePath>..</relativePath> <!-- lookup parent from repository -->
 	</parent>
+	<groupId>org.springframework.cloud</groupId>
 	<artifactId>spring-cloud-netflix-eureka-server</artifactId>
+	<version>1.4.5.1.RELEASE</version>
 	<name>Spring Cloud Netflix Eureka Server</name>
 	<url>https://projects.spring.io/spring-cloud/</url>
 	<properties>
@@ -16,6 +18,12 @@
 		<wro4j.version>1.7.9</wro4j.version>
 	</properties>
 	<dependencies>
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-netflix-dependencies</artifactId>
+			<version>1.4.5.RELEASE</version>
+			<type>pom</type>
+		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-configuration-processor</artifactId>

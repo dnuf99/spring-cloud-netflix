@@ -170,9 +170,13 @@ public class EurekaController {
 			Map<String, Integer> amiCounts = new HashMap<>();
 			Map<InstanceInfo.InstanceStatus, List<Pair<String, String>>> instancesByStatus = new HashMap<>();
 			Map<String, Integer> zoneCounts = new HashMap<>();
+			String swagggerUrl = null;
 			for (InstanceInfo info : app.getInstances()) {
 				String id = info.getId();
 				String url = info.getStatusPageUrl();
+				if(url != null && swagggerUrl == null){
+					swagggerUrl = url.substring(0, url.lastIndexOf("/info")) + "/swagger-ui.html";
+				}
 				InstanceInfo.InstanceStatus status = info.getStatus();
 				String ami = "n/a";
 				String zone = "";
@@ -206,6 +210,7 @@ public class EurekaController {
 			appData.put("zoneCounts", zoneCounts.entrySet());
 			ArrayList<Map<String, Object>> instanceInfos = new ArrayList<>();
 			appData.put("instanceInfos", instanceInfos);
+			appData.put("swaggerUrl", swagggerUrl);
 			for (Iterator<Map.Entry<InstanceInfo.InstanceStatus, List<Pair<String, String>>>> iter = instancesByStatus
 					.entrySet().iterator(); iter.hasNext();) {
 				Map.Entry<InstanceInfo.InstanceStatus, List<Pair<String, String>>> entry = iter
